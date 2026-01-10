@@ -1,0 +1,88 @@
+import { Button, Slider, VerticalBox, LineEdit } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    // 7 args for loading, 1 for saving
+    callback start_loading(float, float, float, float, float, float, string); 
+    callback save_settings(float, float, float, float, float, float, string);
+    callback browse_file() -> string;
+
+    // Properties that Rust can set on startup
+    in-out property <float> vol_val: 1.0;
+    in-out property <float> pitch_val: 1.0;
+    in-out property <float> delay_val: 50.0;
+    in-out property <float> slice_val: 0.2;
+    in-out property <float> start_val: 1.0;
+    in-out property <float> end_val: 2.0;
+    in-out property <string> selected_path: "sounds/click.wav";
+
+    width: 480px;
+    height: 500px; 
+    background: #1a1a1a;
+
+    VerticalBox {
+        spacing: 12px;
+        padding: 15px;
+
+        Text { text: "RKEYBOARD"; font-size: 20px; font-weight: 800; color: #00ff99; horizontal-alignment: center; }
+
+        GridLayout {
+            spacing: 12px;
+            Row {
+                Text { text: "Vol"; vertical-alignment: center; color: white; }
+                vol_s := Slider { minimum: 0.0; maximum: 2.0; value: root.vol_val; changed(v) => { vol_in.text = Math.round(v*100)/100; } }
+                vol_in := LineEdit { text: Math.round(vol_s.value*100)/100; width: 60px; accepted(v) => { vol_s.value = v.to-float(); } }
+            }
+            Row {
+                Text { text: "Pitch"; vertical-alignment: center; color: white; }
+                pitch_s := Slider { minimum: 0.5; maximum: 2.0; value: root.pitch_val; changed(v) => { pitch_in.text = Math.round(v*100)/100; } }
+                pitch_in := LineEdit { text: Math.round(pitch_s.value*100)/100; width: 60px; accepted(v) => { pitch_s.value = v.to-float(); } }
+            }
+            Row {
+                Text { text: "Delay"; vertical-alignment: center; color: white; }
+                delay_s := Slider { minimum: 0.0; maximum: 1000.0; value: root.delay_val; changed(v) => { delay_in.text = Math.round(v); } }
+                delay_in := LineEdit { text: Math.round(delay_s.value); width: 60px; accepted(v) => { delay_s.value = v.to-float(); } }
+            }
+            Row {
+                Text { text: "Slice"; vertical-alignment: center; color: white; }
+                slice_s := Slider { minimum: 0.01; maximum: 1.0; value: root.slice_val; changed(v) => { slice_in.text = Math.round(v*100)/100; } }
+                slice_in := LineEdit { text: Math.round(slice_s.value*100)/100; width: 60px; accepted(v) => { slice_s.value = v.to-float(); } }
+            }
+        }
+
+        VerticalLayout {
+            spacing: 2px;
+            Text { text: "Clip Range"; color: #00ff99; font-size: 12px; }
+            start_s := Slider { minimum: 0.0; maximum: 10.0; value: root.start_val; }
+            end_s := Slider { minimum: 0.0; maximum: 10.0; value: root.end_val; }
+        }
+
+        Button {
+            text: "RELOAD & START"; primary: true; height: 40px;
+            clicked => { root.start_loading(vol_s.value, pitch_s.value, start_s.value, end_s.value, delay_s.value, slice_s.value, root.selected_path); }
+        }
+
+        // --- Bottom Area Split ---
+        HorizontalLayout {
+            height: 30px;
+            spacing: 5px;
+            
+            // File Selection (Button 1)
+            Rectangle {
+                background: #ffffff0a; border-radius: 4px; horizontal-stretch: 1;
+                TouchArea { clicked => { root.selected_path = root.browse_file(); } }
+                Text { text: "File: " + root.selected_path; color: #888; font-size: 10px; vertical-alignment: center; overflow: elide; padding-left: 5px; }
+            }
+
+            // Save Settings (Button 2)
+            Rectangle {
+                background: #00ff991a; border-radius: 4px; width: 100px;
+                TouchArea { 
+                    clicked => { 
+                        root.save_settings(vol_s.value, pitch_s.value, start_s.value, end_s.value, delay_s.value, slice_s.value, root.selected_path); 
+                    } 
+                }
+                Text { text: "SAVE CFG"; color: #00ff99; font-size: 10px; font-weight: 700; vertical-alignment: center; horizontal-alignment: center; }
+            }
+        }
+    }
+}
