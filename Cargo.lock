@@ -4154,6 +4154,7 @@ name = "rkeyboard"
 version = "0.1.0"
 dependencies = [
  "hound",
+ "i-slint-backend-winit",
  "native-dialog",
  "rdev",
  "rodio",

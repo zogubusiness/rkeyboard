@@ -2,15 +2,17 @@
 # Will contain compiled artifacts and dependencies
 /target
 
-# Remove error log from the standard library
 debug/
+Cargo.lock
+**/*.rs.bk
+settings.json
 
 # IDE folders
 .vscode/
 .idea/
 
-# Backup files from editors
+
 *.rs.bk
 
-# If you use environment variables
+
 .env

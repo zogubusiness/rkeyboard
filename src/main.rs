@@ -10,6 +10,7 @@ use native_dialog::FileDialog;
 use rdev::{Event, EventType, Key};
 use serde::{Serialize, Deserialize};
 use std::fs;
+use i_slint_backend_winit::WinitWindowAccessor;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct AppSettings {
@@ -116,51 +117,69 @@ fn main() -> Result<(), slint::PlatformError> {
     });
 
     // --- START LOADING CALLBACK ---
-    let load_state = Arc::clone(&audio_state);
+   let load_state = Arc::clone(&audio_state);
     ui.on_start_loading(move |vol, pitch, clip_start, clip_end, delay, slice_len, file_path| {
-    let path_str = file_path.as_str();
-    let reader = match hound::WavReader::open(path_str) {
-        Ok(r) => r,
-        Err(_) => return,
-    };
-    
-    let spec = reader.spec();
-    let sr = spec.sample_rate as f32;
-    let ch = spec.channels as f32;
-    
-    let actual_start = clip_start.min(clip_end);
-    let actual_end = clip_start.max(clip_end);
-    
-    let start_sample = (actual_start * sr * ch) as usize;
-    let end_sample = (actual_end * sr * ch) as usize;
-    let total_samples = end_sample.saturating_sub(start_sample);
+        let path_str = file_path.as_str();
+        let reader = match hound::WavReader::open(path_str) {
+            Ok(r) => r,
+            Err(_) => return,
+        };
+        
+        let spec = reader.spec();
+        let sr = spec.sample_rate as f32;
+        let ch = spec.channels as f32;
+        
+        let actual_start = clip_start.min(clip_end);
+        let actual_end = clip_start.max(clip_end);
+        
+        let start_sample = (actual_start * sr * ch) as usize;
+        let end_sample = (actual_end * sr * ch) as usize;
+        let total_samples = end_sample.saturating_sub(start_sample);
 
-    // Use the slice_len passed from the slider
-    let chunk_size = (slice_len * sr * ch) as usize;
+        let chunk_size = (slice_len * sr * ch) as usize;
 
-    let all_samples: Vec<i16> = reader.into_samples::<i16>()
-        .skip(start_sample)
-        .take(total_samples)
-        .map(|s| s.unwrap_or(0))
-        .collect();
+        let all_samples: Vec<i16> = reader.into_samples::<i16>()
+            .skip(start_sample)
+            .take(total_samples)
+            .map(|s| s.unwrap_or(0))
+            .collect();
 
-    if all_samples.is_empty() { return; }
+        if all_samples.is_empty() { return; }
 
-    // Slice the selection into the user-defined chunk size
-    let new_chunks: Vec<Vec<i16>> = all_samples.chunks(chunk_size.max(1))
-        .map(|c| c.to_vec())
-        .collect();
+        let new_chunks: Vec<Vec<i16>> = all_samples.chunks(chunk_size.max(1))
+            .map(|c| c.to_vec())
+            .collect();
 
-    let mut state = load_state.lock().unwrap();
-    state.chunks = new_chunks;
-    state.index = 0;
-    state.channels = spec.channels;
-    state.sample_rate = spec.sample_rate;
-    state.loudness = vol;
-    state.pitch = pitch;
-    state.delay_ms = delay as u64;
-    
-    println!("Created {} chunks of {}s length", state.chunks.len(), slice_len);
-});
+        let mut state = load_state.lock().unwrap();
+        state.chunks = new_chunks;
+        state.index = 0;
+        state.channels = spec.channels;
+        state.sample_rate = spec.sample_rate;
+        state.loudness = vol;
+        state.pitch = pitch;
+        state.delay_ms = delay as u64;
+        
+        println!("Created {} chunks of {}s length", state.chunks.len(), slice_len);
+    }); // <--- This brace closes the start_loading callback
+
+    // --- WINDOW CONTROL CALLBACKS (Moved outside) ---
+    let ui_handle = ui.as_weak();
+    ui.on_move_window(move || {
+        let ui = ui_handle.unwrap();
+        ui.window().with_winit_window(|winit_window| {
+            let _ = winit_window.drag_window();
+        });
+    });
+
+    ui.on_close_window(|| {
+        std::process::exit(0);
+    });
+
+    // --- WINDOW APPEARANCE ---
+    ui.window().with_winit_window(|winit_window| {
+        winit_window.set_decorations(false);
+    }); 
+
+    // Final result returned to main
     ui.run()
 }

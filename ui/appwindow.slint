@@ -2,10 +2,11 @@ import { Button, Slider, VerticalBox, LineEdit } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
     // 7 args for loading, 1 for saving
+    callback close_window();
     callback start_loading(float, float, float, float, float, float, string); 
     callback save_settings(float, float, float, float, float, float, string);
     callback browse_file() -> string;
-
+    callback move_window(); 
     // Properties that Rust can set on startup
     in-out property <float> vol_val: 1.0;
     in-out property <float> pitch_val: 1.0;
@@ -17,14 +18,51 @@ export component AppWindow inherits Window {
 
     width: 480px;
     height: 500px; 
+    no-frame: true;
     background: #1a1a1a;
+    
 
     VerticalBox {
         spacing: 12px;
         padding: 15px;
 
-        Text { text: "RKEYBOARD"; font-size: 20px; font-weight: 800; color: #00ff99; horizontal-alignment: center; }
+        Rectangle {
+            height: 40px;
+            background: #252525; // Slightly different color so you know where to drag
+            
+            Text { 
+                text: "RKEYBOARD"; 
+                font-size: 18px; 
+                font-weight: 800; 
+                color: #00ff99; 
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
 
+            TouchArea {
+                pointer-event(event) => {
+                    if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                        root.move_window();
+                    }
+                }
+            }
+
+            // Close Button
+            exit_btn := Rectangle {
+                x: parent.width - 35px;
+                y: 5px;
+                width: 30px;
+                height: 30px;
+                background: ta.has-hover ? #ff4444 : transparent;
+                border-radius: 4px;
+                
+                Text { text: "✕"; color: ta.has-hover ? white : #888; }
+                
+                ta := TouchArea {
+                    clicked => { root.close_window(); }
+                }
+            }
+        }
         GridLayout {
             spacing: 12px;
             Row {
