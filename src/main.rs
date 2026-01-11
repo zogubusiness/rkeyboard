@@ -104,7 +104,7 @@ fn main() -> Result<(), slint::PlatformError> {
         }).unwrap();
     });
 
-    // --- BROWSE FILE CALLBACK ---
+  
     ui.on_browse_file(|| {
         let path = FileDialog::new()
             .add_filter("WAV Audio", &["wav"])
@@ -116,7 +116,7 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
-    // --- START LOADING CALLBACK ---
+    
    let load_state = Arc::clone(&audio_state);
     ui.on_start_loading(move |vol, pitch, clip_start, clip_end, delay, slice_len, file_path| {
         let path_str = file_path.as_str();
@@ -160,9 +160,9 @@ fn main() -> Result<(), slint::PlatformError> {
         state.delay_ms = delay as u64;
         
         println!("Created {} chunks of {}s length", state.chunks.len(), slice_len);
-    }); // <--- This brace closes the start_loading callback
+    }); 
 
-    // --- WINDOW CONTROL CALLBACKS (Moved outside) ---
+    
     let ui_handle = ui.as_weak();
     ui.on_move_window(move || {
         let ui = ui_handle.unwrap();
@@ -175,11 +175,11 @@ fn main() -> Result<(), slint::PlatformError> {
         std::process::exit(0);
     });
 
-    // --- WINDOW APPEARANCE ---
+    
     ui.window().with_winit_window(|winit_window| {
         winit_window.set_decorations(false);
     }); 
 
-    // Final result returned to main
+    
     ui.run()
 }
